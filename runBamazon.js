@@ -12,7 +12,6 @@ const connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     startBamazon();
-    connection.end();
 })
 
 // Function that will run on start of connection.
@@ -49,19 +48,40 @@ function startBamazon() {
                 if (userRes.qty <= res[i].stock_qty) {
                     // IF quantity is available, transaction goes through with total price listed.
                     var totalCost = (res[i].price * userRes.qty);
+                    var newQty = (res[i].stock_qty - userRes.qty);
 
                     console.log("\nTransaction was successful!");
                     console.log("Your total cost is $" + totalCost + ".");
                     console.log("Thank you for using Bamazon!\n");
                     // Quantity is then updated in the store.
 
+                    connection.query(
+                        "UPDATE products SET ? WHERE ?",
+                        [
+                            {
+                                stock_qty: newQty
+                            },
+                            {
+                                item_id: userRes.itemID
+                            }
+                        ],
+
+                        function(err, res) {
+                            console.log("Note: " + res.affectedRows + " product(s) updated!\n");
+                        }
+                    );
+
+                    connection.end();
+
                 } else {
                     // IF quantity is unavailable, transaction does not go through.
                     console.log("\nTransaction was unsucessful due to lack of quantity.");
                     console.log("Please try again later, thank you!\n");
-                }
 
-            })
+                    connection.end();
+                };
 
-    })
+            });
+
+    });
 }
